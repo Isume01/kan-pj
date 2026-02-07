@@ -8,7 +8,7 @@ class PullRequest extends Model
 {
     protected $fillable = [
         'repository_id', 'github_pr_id', 'number', 'title',
-        'body', 'user_login', 'state', 'diff_url', 'html_url'
+        'body', 'user_login', 'state', 'diff_url', 'html_url','is_closed',
     ];
 
     public function aiSummary()

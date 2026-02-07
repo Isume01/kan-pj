@@ -30,9 +30,16 @@ class GithubService
                 'per_page' => 10,
             ]);
 
+        $pullRequestsData = $response->json();
+
+        if (empty($pullRequestsData)) {
+            return 0;
+        }
+
         if ($response->failed()) {
             throw new \Exception("GitHub API Error: " . $response->body());
         }
+
 
         $prs = $response->json();
 
@@ -49,6 +56,51 @@ class GithubService
                     'state'       => $prData['state'],
                     'diff_url'    => $prData['diff_url'],
                     'html_url'    => $prData['html_url'],
+                    'is_closed'    => false,
+                ]
+            );
+        }
+
+        return count($prs);
+    }
+
+    /**
+     * クローズ済みのもの最新PRを取得してDBに保存する
+     */
+    public function getClosedPullRequests(string $fullName, int $perPage = 10)
+    {
+        $repository = Repository::firstOrCreate(['full_name' => $fullName]);
+
+        /** @var \Illuminate\Http\Client\Response $response */
+        $response = Http::withToken($this->token)
+            ->get("https://api.github.com/repos/{$fullName}/pulls", [
+                'state'    => 'closed', // クローズ済みを指定
+                'per_page' => $perPage,  // 件数を動的に変更
+            ]);
+
+        if ($response->failed()) {
+            throw new \Exception("GitHub API Error: " . $response->body());
+        }
+
+        $prs = $response->json();
+
+        if (empty($prs)) {
+            return 0;
+        }
+
+        foreach ($prs as $prData) {
+            PullRequest::updateOrCreate(
+                ['github_pr_id' => $prData['id']],
+                [
+                    'repository_id' => $repository->id,
+                    'number'      => $prData['number'],
+                    'title'       => $prData['title'],
+                    'body'        => $prData['body'],
+                    'user_login'  => $prData['user']['login'],
+                    'state'       => $prData['state'],
+                    'diff_url'    => $prData['diff_url'],
+                    'html_url'    => $prData['html_url'],
+                    'is_closed'   => true,
                 ]
             );
         }
