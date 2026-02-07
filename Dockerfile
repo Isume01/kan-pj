@@ -12,6 +12,10 @@ RUN apt-get update && apt-get install -y \
 # PHP拡張のインストール
 RUN docker-php-ext-install pdo_mysql intl zip bcmath opcache
 
+RUN docker-php-ext-install pdo pdo_mysql
+
+RUN pecl install xdebug && docker-php-ext-enable xdebug
+
 RUN a2enmod rewrite
 
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public

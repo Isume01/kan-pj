@@ -11,22 +11,15 @@ services:
       - "8080:80"
     volumes:
       - .:/var/www/html
+      - ./docker/php/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
     env_file:
       - .env
     depends_on:
-      - db
       - redis
-
-  # データベース
-  db:
-    image: mysql:8.0
     environment:
-      MYSQL_DATABASE: nexussync_db
-      MYSQL_ROOT_PASSWORD: root_password
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
+      DB_HOST: ${DB_HOST}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   # キャッシュ & キュー
   redis:
