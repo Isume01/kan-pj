@@ -21,7 +21,7 @@
 
             <form action="{{ route('repo.store') }}" method="POST" class="flex gap-2">
                 @csrf
-                <input type="text" name="repo_url" placeholder="GitHub URL (owner/repo)"
+                <input type="text" name="repo_url" placeholder="repo URL (owner/repo)"
                        class="border border-slate-300 px-4 py-1.5 rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
                 <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition">
                     リポジトリ追加
@@ -50,13 +50,20 @@
                         </div>
                     </div>
 
-                    <form action="{{ route('repo.refresh', $repo->id) }}" method="POST">
-                        @csrf
-                        <button type="submit" onclick="this.innerHTML='<span class=\'animate-spin\'>⏳</span> 要約中...'; this.disabled=true; this.form.submit();"
-                                class="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-5 py-2 rounded-xl text-sm font-bold shadow-sm transition-all active:scale-95">
-                            🔄 同期＆AI要約を実行
-                        </button>
-                    </form>
+                    <div class="flex items-center gap-3">
+                        <form action="{{ route('repo.refresh', $repo->id) }}" method="POST">
+                            @csrf
+                            <button type="submit" onclick="this.innerHTML='<span class=\'animate-spin\'>⏳</span> 要約中...'; this.disabled=true; this.form.submit();"
+                                    class="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-5 py-2 rounded-xl text-sm font-bold shadow-sm transition-all active:scale-95">
+                                🔄 同期＆AI要約を実行
+                            </button>
+                        </form>
+
+                        <a href="{{ route('repo.closed', ['repo' => $repo->full_name]) }}" target="_blank"
+                           class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-sm transition-all active:scale-95">
+                            📁 履歴・差分を確認
+                        </a>
+                    </div>
                 </div>
 
                 <div class="grid gap-8">
