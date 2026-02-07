@@ -18,6 +18,9 @@ Route::get('/repositories/closed/{repo}', [ClosedPullRequestController::class, '
     ->where('repo', '.*')
     ->name('repo.closed');
 
-// 一覧からクリックした時に、新しいタブで開かれる画面です
-Route::get('/repositories/pulls/{number}', [ClosedPullRequestController::class, 'show'])->name('repo.show');
-
+Route::get('/repositories/pulls/{repo}&{number}', [ClosedPullRequestController::class, 'show'])
+    ->name('repo.show')
+    ->where([
+        'repo' => '[a-zA-Z0-9._/-]+',
+        'number' => '[0-9]+'
+    ]);

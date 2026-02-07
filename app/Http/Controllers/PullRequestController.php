@@ -10,7 +10,12 @@ class PullRequestController extends Controller
 {
     public function index()
     {
-        $repositories = Repository::with(['pullRequests.aiSummary'])->get();
+        $repositories = Repository::with([
+            'pullRequests' => function ($query) {
+                $query->where('is_closed', false);
+            },
+            'pullRequests.aiSummary'
+        ])->get();
 
         return view('pull_requests.index', compact('repositories'));
     }
@@ -33,7 +38,10 @@ class PullRequestController extends Controller
         $githubService->getPullRequests($repository->full_name);
 
         // 2. 未要約のPRをAIで要約（1件ずつ sleep を入れるため少し時間がかかります）
-        $unsummarizedPrs = $repository->pullRequests()->whereDoesntHave('aiSummary')->get();
+        $unsummarizedPrs = $repository->pullRequests()
+            ->where('is_closed', false)
+            ->whereDoesntHave('aiSummary')
+            ->get();
         foreach ($unsummarizedPrs as $pr) {
             $githubService->summarizePullRequest($pr);
         }
