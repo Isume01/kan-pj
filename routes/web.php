@@ -37,7 +37,7 @@ Route::post('/repositories/pulls/{repo}&{number}/review', [AiReviewController::c
         'number' => '[0-9]+'
     ]);
 
-    // 一覧表示
+// 一覧表示
 Route::get('/', [PullRequestController::class, 'index'])->name('repo.index');
 
 Route::get('/{owner}/{repoName}', [PullRequestController::class, 'showRepo'])

@@ -24,7 +24,7 @@ class AiReviewController extends Controller
     {
         $repo = Repository::where('full_name', $repoName)->firstOrFail();
 
-        // 規約を保存または更新 (updateOrCreate)
+        // 規約を保存または更新
         $repo->codingConvention()->updateOrCreate(
             ['repository_id' => $repo->id],
             [
@@ -40,7 +40,7 @@ class AiReviewController extends Controller
     public function executeReview(Request $request, $repoName, $number)
     {
         $repo = Repository::where('full_name', $repoName)->firstOrFail();
-        $convention = $repo->codingConvention->content; // 先ほど保存した規約を取得
+        $convention = $repo->codingConvention->content;
 
         // GitHubからPRの差分を取得 (GitHubService経由)
         $diffText = $this->githubService->getPullRequestDiff($repoName, $number);

@@ -28,7 +28,7 @@ class PullRequestController extends Controller
     public function showRepo($owner, $repoName)
     {
         $fullName = "{$owner}/{$repoName}";
-        $repositories = Repository::all(); // サイドバー用
+        $repositories = Repository::all();
 
         $selectedRepo = Repository::query()
             ->with([
@@ -76,7 +76,6 @@ class PullRequestController extends Controller
                 ]);
             }
 
-            // 万が一通常のフォーム送信が残っていても動作するように
             return back()->with('success', '同期しました');
 
         } catch (\Exception $e) {
