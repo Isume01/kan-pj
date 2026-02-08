@@ -162,14 +162,30 @@
                 <div id="home-view" class="flex-1 flex flex-col items-center justify-center p-6 min-h-screen">
                     <div class="w-full max-w-2xl text-center">
                         <h1 class="text-5xl font-bold text-slate-800 mb-8 tracking-tight">AI Reviewer</h1>
-                        <form action="{{ route('repo.store') }}" method="POST" class="relative group">
+                        <form action="{{ route('repo.store') }}" method="POST" class="relative group" id="repo-form">
                             @csrf
-                            <input type="text" name="repo_url" placeholder="owner/repository-name を入力して追加..."
-                                   class="w-full bg-white border border-slate-200 py-5 pl-14 pr-32 rounded-3xl text-lg shadow-xl shadow-slate-200/50 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all">
-                            <div class="absolute left-5 top-5 text-2xl group-focus-within:animate-bounce">🔍</div>
-                            <button type="submit" class="absolute right-3 top-3 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-2xl text-sm font-bold transition-all">
-                                追加する
-                            </button>
+                            <div class="w-full max-w-2xl relative">
+                                <input type="text"
+                                       id="repo-url-input"
+                                       name="repo_url"
+                                       autocomplete="off"
+                                       placeholder="owner/repository-name..."
+                                       class="w-full bg-white border border-slate-200 py-5 pl-14 pr-32 rounded-3xl text-lg shadow-xl outline-none transition-all">
+
+                                <div class="absolute left-5 top-5 text-2xl">🔍</div>
+
+                                <button type="submit"
+                                        id="repo-add-btn"
+                                        disabled
+                                        class="absolute right-3 top-3 px-6 py-2.5 rounded-2xl text-sm font-bold transition-all bg-slate-100 text-slate-400 cursor-not-allowed">
+                                    追加する
+                                </button>
+
+                                {{-- ★ エラーメッセージ表示エリア --}}
+                                <div id="repo-error-msg" class="absolute top-full left-5 mt-2 text-xs text-rose-500 font-medium opacity-0 transition-opacity">
+                                    ⚠️ リポジトリが見つかりません
+                                </div>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -178,6 +194,70 @@
     </div>
 
     <script>
+    let timeout = null;
+
+    document.getElementById('repo-url-input').addEventListener('input', function() {
+        const query = this.value.trim();
+        const btn = document.getElementById('repo-add-btn');
+        const errorMsg = document.getElementById('repo-error-msg');
+
+        // 入力が空なら即座にリセット
+        if (query.length === 0) {
+            resetUI();
+            return;
+        }
+
+        clearTimeout(timeout);
+        timeout = setTimeout(async () => {
+            try {
+                const response = await fetch(`/repositories/validate?repo_url=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.valid) {
+                    // 成功：ボタンを活性化
+                    btn.disabled = false;
+                    btn.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+                    btn.classList.add('bg-indigo-600', 'text-white', 'hover:bg-indigo-700', 'shadow-lg');
+                    errorMsg.classList.add('opacity-0');
+                } else {
+                    // 失敗：エラーメッセージを表示
+                    btn.disabled = true;
+                    errorMsg.innerText = "⚠️ " + data.message;
+                    errorMsg.classList.remove('opacity-0');
+                    btn.classList.add('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+                    btn.classList.remove('bg-indigo-600', 'text-white');
+                }
+            } catch (e) {
+                console.error("Validation error", e);
+            }
+        }, 500);
+    });
+
+    function resetUI() {
+        const btn = document.getElementById('repo-add-btn');
+        const errorMsg = document.getElementById('repo-error-msg');
+        btn.disabled = true;
+        btn.classList.add('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+        btn.classList.remove('bg-indigo-600', 'text-white');
+        errorMsg.classList.add('opacity-0');
+    }
+        function validateInput() {
+            const input = document.getElementById('repo-url-input');
+            const btn = document.getElementById('repo-add-btn');
+
+            // 文字が入力されているか（空白を除いてチェック）
+            if (input.value.trim().length > 0) {
+                // 活性化
+                btn.disabled = false;
+                btn.classList.remove('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
+                btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'text-white', 'shadow-lg', 'shadow-indigo-200', 'active:scale-95');
+            } else {
+                // 非活性化
+                btn.disabled = true;
+                btn.classList.add('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
+                btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'text-white', 'shadow-lg', 'shadow-indigo-200', 'active:scale-95');
+            }
+        }
     function validateSave(event, repoId) {
             const textarea = document.getElementById(`convention-${repoId}`);
 

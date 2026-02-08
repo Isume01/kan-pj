@@ -13,6 +13,8 @@ Route::post('/repositories', [PullRequestController::class, 'store'])->name('rep
 // リフレッシュ
 Route::post('/repositories/{repository}/refresh', [PullRequestController::class, 'refresh'])->name('repo.refresh');
 
+Route::get('/repositories/validate', [PullRequestController::class, 'validateRepo'])
+    ->name('repo.validate');
 
 
 Route::get('/repositories/closed/{repo}', [ClosedPullRequestController::class, 'indexClosed'])
