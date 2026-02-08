@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexusrefresh - AI PR Summary</title>
+    <title>Nexusrefresh - AI Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
+    <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
 <body class="bg-slate-50 text-slate-900 antialiased">
 
@@ -22,7 +20,7 @@
             <form action="{{ route('repo.store') }}" method="POST" class="flex gap-2">
                 @csrf
                 <input type="text" name="repo_url" placeholder="repo URL (owner/repo)"
-                       class="border border-slate-300 px-4 py-1.5 rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                       class="border border-slate-300 px-4 py-1.5 rounded-lg text-sm w-64 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
                 <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition">
                     リポジトリ追加
                 </button>
@@ -33,94 +31,177 @@
     <main class="max-w-6xl mx-auto p-6 md:p-8">
 
         @if(session('success'))
-            <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl mb-8 flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
-                <span class="text-xl">✅</span>
+            <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl mb-8 flex items-center gap-3 animate-in fade-in duration-300">
+                <span>✅</span>
                 <span class="font-medium">{{ session('success') }}</span>
             </div>
         @endif
 
         @foreach($repositories as $repo)
-            <section class="mb-16">
-                <div class="flex items-center justify-between mb-6">
+            <section class="mb-20">
+                {{-- リポジトリヘッダー --}}
+                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
                     <div class="flex items-center gap-3">
-                        <div class="bg-white p-2 rounded-lg shadow-sm border border-slate-200 text-2xl">📦</div>
+                        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 text-3xl">📦</div>
                         <div>
-                            <h2 class="text-2xl font-bold text-slate-800">{{ $repo->full_name }}</h2>
-                            <p class="text-sm text-slate-500">最新のプルリクエスト同期</p>
+                            <h2 class="text-3xl font-bold text-slate-800">{{ $repo->full_name }}</h2>
+                            <p class="text-sm text-slate-500">Active Pull Requests</p>
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2">
                         <form action="{{ route('repo.refresh', $repo->id) }}" method="POST">
                             @csrf
-                            <button type="submit" onclick="this.innerHTML='<span class=\'animate-spin\'>⏳</span> 要約中...'; this.disabled=true; this.form.submit();"
-                                    class="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-5 py-2 rounded-xl text-sm font-bold shadow-sm transition-all active:scale-95">
-                                🔄 同期＆AI要約を実行
+                            <button type="submit" class="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95">
+                                🔄 同期
                             </button>
                         </form>
-
                         <a href="{{ route('repo.closed', ['repo' => $repo->full_name]) }}" target="_blank"
-                           class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-sm transition-all active:scale-95">
-                            📁 履歴・差分を確認
+                           class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95">
+                            📁 履歴
                         </a>
                     </div>
                 </div>
 
-                <div class="grid gap-8">
+                {{-- ★ コーディング規約設定エリア (リポジトリ単位に集約) ★ --}}
+                <div class="mb-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <details class="group">
+                        <summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <span class="text-lg">📋</span>
+                                <h4 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Coding Conventions</h4>
+                                @if($repo->codingConvention)
+                                    <span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full font-bold">設定済み</span>
+                                @endif
+                            </div>
+                            <span class="text-slate-400 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+                            <form action="{{ route('repo.convention.store', $repo->full_name) }}"
+                                  method="POST"
+                                  onsubmit="return validateSave(event, {{ $repo->id }})">
+                                @csrf
+                                <textarea id="convention-{{ $repo->id }}" name="content"
+                                    placeholder="例：関数のネストは3段まで、命名はキャメルケース..."
+                                    class="w-full text-sm p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">{{ optional($repo->codingConvention)->content }}</textarea>
+
+                                <div class="mt-3 flex justify-end">
+                                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition-all">
+                                        {{ $repo->codingConvention ? '規約を更新する' : '規約を保存する' }}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </details>
+                </div>
+
+                {{-- PRリスト --}}
+                <div class="grid gap-6">
                     @forelse($repo->pullRequests as $pr)
-                        <div class="group bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                             <div class="p-6">
-                                <div class="flex justify-between items-start mb-6">
+                                <div class="flex justify-between items-start mb-4">
                                     <div class="flex-1">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <span class="bg-slate-100 text-slate-600 text-xs font-bold px-2 py-0.5 rounded">#{{ $pr->number }}</span>
-                                            <span class="text-xs text-slate-400 font-medium">{{ $pr->created_at->diffForHumans() }}</span>
+                                        <div class="flex items-center gap-2 mb-1 text-xs text-slate-400 font-medium">
+                                            <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">#{{ $pr->number }}</span>
+                                            <span>by {{ $pr->user_login }}</span>
+                                            <span>•</span>
+                                            <span>{{ $pr->created_at->diffForHumans() }}</span>
                                         </div>
-                                        <h3 class="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                                            {{ $pr->title }}
-                                        </h3>
-                                        <div class="flex items-center gap-2 mt-2">
-                                            <div class="w-5 h-5 bg-slate-200 rounded-full flex items-center justify-center text-[10px]">👤</div>
-                                            <span class="text-sm text-slate-600 font-medium">{{ $pr->user_login }}</span>
-                                        </div>
+                                        <h3 class="text-lg font-bold text-slate-900">{{ $pr->title }}</h3>
                                     </div>
-                                    <a href="{{ $pr->html_url }}" target="_blank" class="text-slate-400 hover:text-indigo-500 transition-colors p-2 bg-slate-50 rounded-lg">
+                                    <a href="{{ $pr->html_url }}" target="_blank" class="text-slate-400 hover:text-indigo-600 p-2">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                                     </a>
                                 </div>
 
-                                <div class="relative">
-                                    <div class="absolute -left-6 top-0 bottom-0 w-1 bg-indigo-500 rounded-r-full"></div>
-                                    <div class="bg-indigo-50/50 rounded-xl p-5 border border-indigo-100">
-                                        <div class="flex items-center gap-2 mb-3">
-                                            <span class="text-lg">🤖</span>
-                                            <h4 class="text-sm font-bold text-indigo-900 tracking-wider uppercase">AI Summary</h4>
-                                        </div>
-                                        <div class="text-slate-700 leading-relaxed text-sm space-y-2">
-                                            @if($pr->aiSummary)
-                                                {!! nl2br(e($pr->aiSummary->summary)) !!}
-                                            @else
-                                                <p class="text-slate-400 italic">⚠️ 要約が生成されていません。同期ボタンを押してください。</p>
-                                            @endif
-                                        </div>
+                                {{-- AI Summary Area --}}
+                                <div class="bg-indigo-50/50 rounded-xl p-4 border border-indigo-100 mb-4">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="text-sm">🤖</span>
+                                        <h4 class="text-xs font-bold text-indigo-900 tracking-wider uppercase">AI Summary</h4>
                                     </div>
+                                    <div class="text-slate-700 text-sm leading-relaxed">
+                                        @if($pr->aiSummary)
+                                            {!! nl2br(e($pr->aiSummary->summary)) !!}
+                                        @else
+                                            <p class="text-slate-400 italic">同期ボタンを押して要約を生成してください</p>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                {{-- ★ AI Review Result Area (ここに追加) ★ --}}
+                                @if($pr->aiReviews && $pr->aiReviews->isNotEmpty())
+                                    <div class="bg-amber-50/50 rounded-xl p-4 border border-amber-100 mb-4">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <span class="text-sm">🧐</span>
+                                            <h4 class="text-xs font-bold text-amber-900 tracking-wider uppercase">AI Code Review</h4>
+                                        </div>
+                                        <div class="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{{ $pr->aiReviews->last()->review_result }}</div>
+                                    </div>
+                                @endif
+
+                                {{-- Action Buttons --}}
+                                <div class="flex items-center gap-3">
+                                    <button onclick="toggleDiff(this, '{{ $repo->full_name }}', {{ $pr->number }})"
+                                            class="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-all">
+                                        🔍 差分を確認
+                                    </button>
+
+                                    <form action="{{ route('repo.review.execute', ['repo' => $repo->full_name, 'number' => $pr->number]) }}" method="POST" onsubmit="return checkConvention(event, {{ $repo->id }})">
+                                        @csrf
+                                        <button type="submit"
+                                                class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm shadow-indigo-200">
+                                            🚀 AIレビューを実行
+                                        </button>
+                                    </form>
+                                </div>
+
+                                {{-- Ajax Diff Container --}}
+                                <div id="diff-container-{{ $pr->number }}" class="hidden mt-4 pt-4 border-t border-slate-100">
+                                    <div class="loading text-center py-4 text-slate-400 text-xs">読み込み中...</div>
+                                    <div class="content overflow-hidden"></div>
                                 </div>
                             </div>
                         </div>
                     @empty
-                        <div class="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-slate-200">
-                            <p class="text-slate-400">プルリクエストが見つかりませんでした。</p>
+                        <div class="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-slate-200 text-slate-400">
+                            アクティブなPRはありません。
                         </div>
                     @endforelse
                 </div>
             </section>
         @endforeach
-
     </main>
-
-    <footer class="text-center py-12 text-slate-400 text-sm">
-        &copy; 2026 Nexusrefresh Project. Created by Kan.
+    <footer class="text-center py-12 text-slate-400 text-xs">
+        &copy; 2026 Nexusrefresh Project.
     </footer>
+    <script>
+        // 規約保存時のチェック
+        function validateSave(event, repoId) {
+            const textarea = document.getElementById(`convention-${repoId}`);
 
+            if (!textarea || textarea.value.trim() === "") {
+                alert("⚠️ 規約内容が空です。内容を入力してから保存してください。");
+                textarea.focus();
+                return false; // 送信を中止
+            }
+            return true; // 送信を実行
+        }
+
+        // AIレビュー実行時のチェック（前回のもの）
+        function checkConvention(event, repoId) {
+            const textarea = document.getElementById(`convention-${repoId}`);
+
+            if (!textarea || textarea.value.trim() === "") {
+                alert("⚠️ コーディング規約が設定されていません。先に規約を保存してください。");
+                const details = textarea.closest('details');
+                if (details) details.open = true;
+                textarea.focus();
+                return false;
+            }
+            return true;
+        }
+    </script>
 </body>
 </html>
