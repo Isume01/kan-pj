@@ -6,6 +6,7 @@
     <title>Nexusrefresh - AI Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
 <body class="bg-slate-50 text-slate-900 antialiased">
@@ -123,7 +124,7 @@
                                     </div>
                                     <div class="text-slate-700 text-sm leading-relaxed">
                                         @if($pr->aiSummary)
-                                            {!! nl2br(e($pr->aiSummary->summary)) !!}
+                                            {!! (new \Parsedown())->text($pr->aiSummary->summary) !!}
                                         @else
                                             <p class="text-slate-400 italic">同期ボタンを押して要約を生成してください</p>
                                         @endif
@@ -137,7 +138,7 @@
                                             <span class="text-sm">🧐</span>
                                             <h4 class="text-xs font-bold text-amber-900 tracking-wider uppercase">AI Code Review</h4>
                                         </div>
-                                        <div class="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{{ $pr->aiReviews->last()->review_result }}</div>
+                                        <div class="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{!! (new \Parsedown())->text($pr->aiReviews->last()->review_result) !!}</div>
                                     </div>
                                 @endif
 
