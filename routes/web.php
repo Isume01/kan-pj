@@ -5,8 +5,7 @@ use App\Http\Controllers\PullRequestController;
 use App\Http\Controllers\ClosedPullRequestController;
 use App\Http\Controllers\AiReviewController;
 
-// 一覧表示
-Route::get('/', [PullRequestController::class, 'index'])->name('repo.index');
+
 
 // URL入力
 Route::post('/repositories', [PullRequestController::class, 'store'])->name('repo.store');
@@ -37,3 +36,10 @@ Route::post('/repositories/pulls/{repo}&{number}/review', [AiReviewController::c
         'repo' => '[a-zA-Z0-9._/-]+',
         'number' => '[0-9]+'
     ]);
+
+    // 一覧表示
+Route::get('/', [PullRequestController::class, 'index'])->name('repo.index');
+
+Route::get('/{owner}/{repoName}', [PullRequestController::class, 'showRepo'])
+    ->name('repo.show_details')
+    ->where(['owner' => '[a-zA-Z0-9._-]+', 'repo' => '[a-zA-Z0-9._-]+']);

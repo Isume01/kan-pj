@@ -11,7 +11,6 @@
                 </span>
             </div>
 
-            {{-- 差分エリア：ここを table-fixed 風に制御します --}}
             <div class="relative w-full overflow-x-auto bg-slate-50">
                 <pre class="p-4 text-[12px] font-mono leading-5 text-slate-700 w-full"><code>@isset($file['patch'])
                     @foreach(explode("\n", $file['patch']) as $line)

@@ -14,7 +14,7 @@
         <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <span class="text-2xl">🚀</span>
-                <span class="text-xl font-bold tracking-tight">Nexusrefresh</span>
+                <span class="text-xl font-bold tracking-tight">PULLREQUEST AI REVIEWER</span>
             </div>
             <a href="{{ route('repo.index') }}" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
                 ← ダッシュボードへ戻る
@@ -55,14 +55,12 @@
                             <p class="text-slate-600 text-sm line-clamp-2">{{ $pr->body ?? '説明なし' }}</p>
                         </div>
 
-                        {{-- 【修正】Ajaxトリガーボタン --}}
                         <button onclick="toggleDiff(this, '{{ $repo }}', {{ $pr->number }})"
                            class="ml-4 shrink-0 inline-flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95">
                             <span class="icon">🔍</span> 差分を確認
                         </button>
                     </div>
 
-                    {{-- 【追加】Ajaxで中身が挿入されるコンテナ --}}
                    <div id="diff-container-{{ $pr->number }}" class="hidden mt-6 pt-6 border-t border-slate-100 w-full max-w-full overflow-hidden">
                         <div class="loading text-center py-4 text-slate-400 flex items-center justify-center gap-2">
                             <div class="animate-spin rounded-full h-4 w-4 border-2 border-indigo-500 border-t-transparent"></div>
@@ -80,7 +78,7 @@
     </main>
 
     <footer class="text-center py-12 text-slate-400 text-sm">
-        &copy; 2026 Nexusrefresh Project.
+        &copy; 2026 KAN'TEST Project.
     </footer>
 
     <script>
@@ -103,7 +101,7 @@
 
             try {
                 loadingArea.classList.remove('hidden');
-                // URLに & を使う韓さんスタイルに合わせて構築
+
                 const response = await fetch(`/repositories/pulls/${repo}&${number}`, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
