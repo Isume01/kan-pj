@@ -83,20 +83,11 @@
                     {{-- 規約設定 --}}
                     <div class="mb-8 bg-slate-50 rounded-3xl p-6 border border-slate-200">
                         <h4 class="text-xs font-bold text-slate-500 uppercase mb-4 tracking-widest">Coding Conventions</h4>
-                        <form action="{{ route('repo.convention.store', $repo->full_name) }}"
-                                  method="POST"
-                                  onsubmit="return validateSave(event, {{ $repo->id }})">
-                                @csrf
-                                <textarea id="convention-{{ $repo->id }}" name="content"
-                                    placeholder="例：関数のネストは3段まで、命名はキャメルケース..."
-                                    class="w-full text-sm p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">{{ optional($repo->codingConvention)->content }}</textarea>
-
-                                <div class="mt-3 flex justify-end">
-                                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition-all">
-                                        {{ $repo->codingConvention ? '規約を更新する' : '規約を保存する' }}
-                                    </button>
-                                </div>
-                            </form>
+                        <form action="{{ route('repo.convention.store', $selectedRepo->full_name) }}" method="POST">
+                            @csrf
+                            <textarea name="content" class="w-full bg-white border border-slate-200 rounded-2xl p-4 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" rows="3" placeholder="例：命名規則はキャメルケース...">{{ optional($selectedRepo->codingConvention)->content }}</textarea>
+                            <button type="submit" class="mt-3 bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 transition">規約を保存</button>
+                        </form>
                     </div>
 
                     {{-- PRリスト --}}
