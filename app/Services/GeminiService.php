@@ -39,6 +39,8 @@ class GeminiService
         $model = "gemini-2.5-flash";
         $url = "https://generativelanguage.googleapis.com/v1/models/{$model}:generateContent?key={$this->apiKey}";
         $response = Http::withHeaders(['Content-Type' => 'application/json'])
+            //0209追記　APIの待ち時間増加
+            ->retry(10, 10000)
             ->post($url, [
                 'contents' => [
                     ['parts' => [['text' => $prompt]]]
