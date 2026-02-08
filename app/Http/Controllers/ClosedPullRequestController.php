@@ -23,24 +23,27 @@ class ClosedPullRequestController extends Controller
 
         $repository = Repository::where('full_name', $repo)->firstOrFail();
         $pullRequests = $repository->pullRequests()
-            ->where('is_closed', true)
             ->orderBy('number', 'desc')
+            ->take($perPage)
             ->get();
 
         return view('closed_pull_requests.closed', compact('pullRequests', 'perPage', 'repo'));
     }
 
-    public function show($repo, $number)
+    public function show(Request $request, $repo, $number)
     {
         $response = Http::withToken(config('services.github.token'))
             ->get("https://api.github.com/repos/{$repo}/pulls/{$number}/files");
 
         if ($response->failed()) {
-            abort(404);
+            return $request->ajax() ? response('Error', 404) : abort(404);
         }
 
         $files = $response->json();
 
-        return view('closed_pull_requests.show', compact('files', 'number', 'repo'));
+        // Ajaxリクエストの場合は、パーツ用のViewを返す
+        if ($request->ajax()) {
+            return view('closed_pull_requests.parts.partial_diff', compact('files', 'number', 'repo'))->render();
+        }
     }
 }

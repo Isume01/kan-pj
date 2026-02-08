@@ -52,4 +52,49 @@ class GeminiService
 
         return $response->json('candidates.0.content.parts.0.text');
     }
+
+    /**
+     * PRの差分をユーザー指定のコーディング規約に基づいてレビューする
+     */
+    public function reviewWithConvention(string $diffText, string $convention): string
+    {
+        $prompt = "
+            あなたは厳格かつ建設的なシニアソフトウェアエンジニアです。
+            提出されたGitHubの差分（diff）を、以下の【コーディング規約】に照らし合わせてレビューしてください。
+
+            【コーディング規約】
+            {$convention}
+
+            【レビューのガイドライン】
+            1. 規約遵守: 提供された規約に違反している箇所を特定し、修正案を提示してください。
+            2. ロジックの維持: アルゴリズムやビジネスロジック自体への変更ではなく、書き方やスタイル、規約に基づく改善に集中してください。
+            3. 具体的指摘: 「どのファイルのどのあたり」が「どう悪いか」をMarkdown形式で簡潔に記述してください。
+
+            ---
+            【解析対象の差分 (diff)】
+            {$diffText}
+            ---
+            ";
+
+        $model = "gemini-2.5-flash";
+        $url = "https://generativelanguage.googleapis.com/v1/models/{$model}:generateContent?key={$this->apiKey}";
+
+        $response = Http::withHeaders(['Content-Type' => 'application/json'])
+            ->timeout(120)
+            ->post($url, [
+                'contents' => [
+                    ['parts' => [['text' => $prompt]]]
+                ],
+                'generationConfig' => [
+                    'temperature' => 0.2,
+                    'topP' => 0.8,
+                ]
+            ]);
+
+        if ($response->failed()) {
+            throw new \Exception("AI Review Error: " . $response->body());
+        }
+
+        return $response->json('candidates.0.content.parts.0.text') ?? 'レビュー結果を生成できませんでした。';
+    }
 }

@@ -5,16 +5,44 @@ namespace App\Http\Controllers;
 use App\Models\Repository;
 use Illuminate\Http\Request;
 use App\Services\GithubService;
+use App\Services\GeminiService;
 
 class PullRequestController extends Controller
 {
+    protected $githubService;
+
+    protected $geminiService;
+
+    public function __construct(GithubService $githubService, GeminiService $geminiService)
+    {
+        $this->githubService = $githubService;
+        $this->geminiService = $geminiService;
+    }
+
     public function index()
     {
-        $repositories = Repository::with(['pullRequests.aiSummary'])->get();
-
+        $repositories = Repository::all();
         return view('pull_requests.index', compact('repositories'));
     }
 
+    public function showRepo($owner, $repoName)
+    {
+        $fullName = "{$owner}/{$repoName}";
+        $repositories = Repository::all();
+
+        $selectedRepo = Repository::query()
+            ->with([
+                'codingConvention',
+                'pullRequests' => function ($query) {
+                    $query->where('is_closed', false)
+                          ->with(['aiSummary', 'aiReviews']);
+                }
+            ])
+            ->where('full_name', $fullName)
+            ->firstOrFail();
+
+        return view('pull_requests.index', compact('repositories', 'selectedRepo'));
+    }
     public function store(Request $request)
     {
         $url = $request->input('repo_url');
@@ -27,17 +55,34 @@ class PullRequestController extends Controller
     }
 
     // リフレッシュボタンの処理
-    public function refresh(Repository $repository, GithubService $githubService)
+    public function refresh(Repository $repository)
     {
-        // 1. GitHubから最新のPRを取得
-        $githubService->getPullRequests($repository->full_name);
+        try {
+            // 既存の同期ロジック（GitHubからPR取得など）を実行
+            $this->githubService->getPullRequests($repository->full_name);
 
-        // 2. 未要約のPRをAIで要約（1件ずつ sleep を入れるため少し時間がかかります）
-        $unsummarizedPrs = $repository->pullRequests()->whereDoesntHave('aiSummary')->get();
-        foreach ($unsummarizedPrs as $pr) {
-            $githubService->summarizePullRequest($pr);
+            $unsummarizedPrs = $repository->pullRequests()
+                ->where('is_closed', false)
+                ->whereDoesntHave('aiSummary')
+                ->get();
+            foreach ($unsummarizedPrs as $pr) {
+                $this->githubService->summarizePullRequest($pr);
+            }
+            // AJAXリクエストの場合はJSONを返す
+            if (request()->ajax()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Sync completed'
+                ]);
+            }
+
+            return back()->with('success', '同期しました');
+
+        } catch (\Exception $e) {
+            if (request()->ajax()) {
+                return response()->json(['error' => $e->getMessage()], 500);
+            }
+            throw $e;
         }
-
-        return redirect()->route('repo.index')->with('success', "最新の要約を生成しました。");
     }
 }

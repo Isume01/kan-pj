@@ -130,4 +130,30 @@ class GithubService
             'model_name' => 'gemini-2.5-flash',
         ]);
     }
+
+    /**
+     * DBに保存されたURLを使用して、GitHubから差分（diff）の生テキストを取得する
+     */
+    public function getPullRequestDiff(string $repoName, int $number): string
+    {
+        $repository = Repository::where('full_name', $repoName)->firstOrFail();
+
+        $pr = $repository->pullRequests()
+            ->where('number', $number)
+            ->firstOrFail();
+
+        $diffUrl = $pr->diff_url;
+
+        if (!$diffUrl) {
+            throw new \Exception("DBにdiff_urlが保存されていません。同期を先に行う必要があります。");
+        }
+
+        $response = Http::withToken($this->token)->get($diffUrl);
+
+        if ($response->failed()) {
+            throw new \Exception("GitHubから差分のフェッチに失敗しました。URL: {$diffUrl}");
+        }
+
+        return $response->body();
+    }
 }

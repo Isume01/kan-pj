@@ -9,7 +9,12 @@ class Repository extends Model
     protected $fillable = ['full_name', 'is_active', 'last_synced_at'];
 
     public function pullRequests()
-        {
-            return $this->hasMany(PullRequest::class);
-        }
+    {
+        return $this->hasMany(PullRequest::class);
+    }
+
+    public function codingConvention()
+    {
+        return $this->hasOne(CodingConvention::class);
+    }
 }

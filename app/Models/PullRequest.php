@@ -15,4 +15,9 @@ class PullRequest extends Model
     {
         return $this->hasOne(AISummary::class);
     }
+
+    public function aiReviews()
+    {
+        return $this->hasMany(AiReview::class);
+    }
 }
