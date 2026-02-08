@@ -142,19 +142,24 @@
                                 @endif
 
                                 {{-- Action Buttons --}}
-                                <div class="flex items-center gap-3">
-                                    <button onclick="toggleDiff(this, '{{ $repo->full_name }}', {{ $pr->number }})"
-                                            class="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-all">
-                                        🔍 差分を確認
-                                    </button>
+                                <div class="flex flex-col gap-4">
+                                    <div class="flex items-center gap-3">
+                                        <button onclick="toggleDiff(...)">🔍 差分</button>
 
-                                    <form action="{{ route('repo.review.execute', ['repo' => $repo->full_name, 'number' => $pr->number]) }}" method="POST" onsubmit="return checkConvention(event, {{ $repo->id }})">
-                                        @csrf
-                                        <button type="submit"
-                                                class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm shadow-indigo-200">
-                                            🚀 AIレビューを実行
+                                        <button type="button"
+                                                id="review-btn-{{ $pr->number }}"
+                                                onclick="startAiReview('{{ $repo->full_name }}', {{ $pr->number }})"
+                                                class="shrink-0 inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-200">
+                                            <span class="icon">🚀</span> AIレビューを実行
                                         </button>
-                                    </form>
+                                    </div>
+
+                                    <div id="progress-container-{{ $pr->number }}" class="hidden w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                                        <div id="progress-bar-{{ $pr->number }}"
+                                             class="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-out"
+                                             style="width: 0%"></div>
+                                        <p class="text-[10px] text-slate-500 mt-1 animate-pulse">AIがコードを解析中...（大規模なPRの場合は1分ほどかかることがあります）</p>
+                                    </div>
                                 </div>
 
                                 {{-- Ajax Diff Container --}}
@@ -189,7 +194,6 @@
             return true; // 送信を実行
         }
 
-        // AIレビュー実行時のチェック（前回のもの）
         function checkConvention(event, repoId) {
             const textarea = document.getElementById(`convention-${repoId}`);
 
@@ -201,6 +205,56 @@
                 return false;
             }
             return true;
+        }
+
+        async function startAiReview(repoName, prNumber) {
+            const btn = document.getElementById(`review-btn-${prNumber}`);
+            const container = document.getElementById(`progress-container-${prNumber}`);
+            const bar = document.getElementById(`progress-bar-${prNumber}`);
+
+            // UIの初期化
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            container.classList.remove('hidden');
+
+            // 擬似的な進捗アニメーション
+            let width = 0;
+            const interval = setInterval(() => {
+                if (width < 90) { // 90%までは自動で進む
+                    width += Math.random() * 2;
+                    bar.style.width = width + "%";
+                }
+            }, 1000);
+
+            try {
+                const response = await fetch(`/repositories/pulls/${repoName}&${prNumber}/review`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) throw new Error('Review failed');
+
+                const result = await response.json();
+
+                // 完了！
+                clearInterval(interval);
+                bar.style.width = "100%";
+
+                setTimeout(() => {
+                    alert("✅ レビューが完了しました！ページを更新します。");
+                    location.reload(); // 結果を表示するためにリロード
+                }, 500);
+
+            } catch (error) {
+                clearInterval(interval);
+                alert("❌ エラーが発生しました。時間をおいて再度お試しください。");
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+                container.classList.add('hidden');
+            }
         }
     </script>
 </body>

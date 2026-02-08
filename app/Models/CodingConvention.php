@@ -13,9 +13,4 @@ class CodingConvention extends Model
     {
         return $this->belongsTo(Repository::class);
     }
-
-    public function aiReviews()
-    {
-        return $this->hasMany(AiReview::class);
-    }
 }

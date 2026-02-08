@@ -136,9 +136,9 @@ class GithubService
      */
     public function getPullRequestDiff(string $repoName, int $number): string
     {
-        $pr = PullRequest::whereHas('repository', function ($query) use ($repoName) {
-                $query->where('full_name', $repoName);
-            })
+        $repository = Repository::where('full_name', $repoName)->firstOrFail();
+
+        $pr = $repository->pullRequests()
             ->where('number', $number)
             ->firstOrFail();
 

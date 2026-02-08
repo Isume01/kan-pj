@@ -49,12 +49,17 @@ class AiReviewController extends Controller
         $reviewResult = $this->geminiService->reviewWithConvention($diffText, $convention);
 
         // DBに保存
-        $repo->pullRequests()->where('number', $number)->first()->aiReviews()->create([
+        $pr = $repo->pullRequests()->where('number', $number)->first();
+
+        $pr->aiReviews()->updateOrCreate([
             'coding_convention_id' => $repo->codingConvention->id,
             'review_result' => $reviewResult,
             'status' => 'completed'
         ]);
 
-        return back()->with('success', 'AIレビューが完了しました！');
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Review completed'
+        ]);
     }
 }
