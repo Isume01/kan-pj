@@ -85,4 +85,26 @@ class PullRequestController extends Controller
             throw $e;
         }
     }
+
+    public function validateRepo(Request $request)
+    {
+        $repoUrl = $request->query('repo_url');
+
+        if (!preg_match('/^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/', $repoUrl)) {
+            return response()->json(['valid' => false, 'message' => '形式が正しくありません (owner/repo)']);
+        }
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::withToken(config('services.github.token'))
+                ->get("https://api.github.com/repos/{$repoUrl}");
+
+            if ($response->successful()) {
+                return response()->json(['valid' => true]);
+            } else {
+                return response()->json(['valid' => false, 'message' => 'リポジトリが見つかりません。非公開設定や入力ミスを確認してください。']);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['valid' => false, 'message' => '通信エラーが発生しました。']);
+        }
+    }
 }

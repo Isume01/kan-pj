@@ -127,30 +127,53 @@
                                     $hasConvention = optional($selectedRepo->codingConvention)->content ? true : false;
                                 @endphp
 
-                                <div class="relative group inline-block">
-                                    {{-- 規約がない場合、ボタンの上に透明なレイヤーを置いてホバーを検知 --}}
-                                    @if(!$hasConvention)
-                                        <div class="absolute inset-0 z-10 cursor-not-allowed" title="コーディング規約を入力してください"></div>
-                                    @endif
+                                <div class="flex flex-col gap-4">
+                                    <div class="relative group inline-block">
+                                        @if(!$hasConvention)
+                                            <div class="absolute inset-0 z-10 cursor-not-allowed" title="コーディング規約を入力してください"></div>
+                                        @endif
 
-                                    <button type="button"
-                                            id="review-btn-{{ $pr->number }}"
-                                            onclick="startAiReview('{{ $selectedRepo->full_name }}', {{ $pr->number }})"
-                                            @disabled(!$hasConvention)
-                                            class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95
-                                            {{ $hasConvention
-                                                ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100'
-                                                : 'bg-slate-200 text-slate-400 border border-slate-300'
-                                            }}">
-                                        🚀 AIレビューを実行
-                                    </button>
+                                        <button type="button"
+                                                id="review-btn-{{ $pr->number }}"
+                                                onclick="startAiReview('{{ $selectedRepo->full_name }}', {{ $pr->number }})"
+                                                @disabled(!$hasConvention)
+                                                class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95
+                                                {{ $hasConvention
+                                                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-100'
+                                                    : 'bg-slate-200 text-slate-400 border border-slate-300'
+                                                }}">
+                                            🚀 AIレビューを実行
+                                        </button>
 
-                                    @if(!$hasConvention)
-                                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-20">
-                                            ⚠️ コーディング規約を入力してください
-                                            <div class="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-800"></div>
+                                        @if(!$hasConvention)
+                                            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-800 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-20">
+                                                ⚠️ コーディング規約を入力してください
+                                                <div class="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-800"></div>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <div id="progress-container-{{ $pr->number }}" class="hidden w-full bg-slate-100 rounded-2xl p-4 border border-slate-200">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <span class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider animate-pulse">AI Analysis in Progress</span>
+                                            <span id="progress-text-{{ $pr->number }}" class="text-[10px] font-mono text-slate-400">0%</span>
                                         </div>
-                                    @endif
+                                        <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                                            <div id="progress-bar-{{ $pr->number }}"
+                                                 class="bg-indigo-600 h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_8px_rgba(79,70,229,0.4)]"
+                                                 style="width: 0%"></div>
+                                        </div>
+                                        <p class="text-[10px] text-slate-500 mt-2 leading-relaxed">
+                                            🔍 規約に基づきコードをスキャン中...<br>
+                                            <span class="text-slate-400">※ 大規模なPRの場合は最大1分ほどかかることがあります。</span>
+                                        </p>
+                                    </div>
+
+                                    {{-- Ajax Diff Container --}}
+                                    <div id="diff-container-{{ $pr->number }}" class="hidden mt-4 pt-4 border-t border-slate-100">
+                                        <div class="loading text-center py-4 text-slate-400 text-xs">読み込み中...</div>
+                                        <div class="content overflow-hidden"></div>
+                                    </div>
                                 </div>
                             </div>
                         @empty
@@ -162,14 +185,29 @@
                 <div id="home-view" class="flex-1 flex flex-col items-center justify-center p-6 min-h-screen">
                     <div class="w-full max-w-2xl text-center">
                         <h1 class="text-5xl font-bold text-slate-800 mb-8 tracking-tight">AI Reviewer</h1>
-                        <form action="{{ route('repo.store') }}" method="POST" class="relative group">
+                        <form action="{{ route('repo.store') }}" method="POST" class="relative group" id="repo-form">
                             @csrf
-                            <input type="text" name="repo_url" placeholder="owner/repository-name を入力して追加..."
-                                   class="w-full bg-white border border-slate-200 py-5 pl-14 pr-32 rounded-3xl text-lg shadow-xl shadow-slate-200/50 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all">
-                            <div class="absolute left-5 top-5 text-2xl group-focus-within:animate-bounce">🔍</div>
-                            <button type="submit" class="absolute right-3 top-3 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-2xl text-sm font-bold transition-all">
-                                追加する
-                            </button>
+                            <div class="w-full max-w-2xl relative">
+                                <input type="text"
+                                       id="repo-url-input"
+                                       name="repo_url"
+                                       autocomplete="off"
+                                       placeholder="owner/repository-name..."
+                                       class="w-full bg-white border border-slate-200 py-5 pl-14 pr-32 rounded-3xl text-lg shadow-xl outline-none transition-all">
+
+                                <div class="absolute left-5 top-5 text-2xl">🔍</div>
+
+                                <button type="submit"
+                                        id="repo-add-btn"
+                                        disabled
+                                        class="absolute right-3 top-3 px-6 py-2.5 rounded-2xl text-sm font-bold transition-all bg-slate-100 text-slate-400 cursor-not-allowed">
+                                    追加する
+                                </button>
+
+                                <div id="repo-error-msg" class="absolute top-full left-5 mt-2 text-xs text-rose-500 font-medium opacity-0 transition-opacity">
+                                    ⚠️ リポジトリが見つかりません
+                                </div>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -178,6 +216,70 @@
     </div>
 
     <script>
+    let timeout = null;
+
+    document.getElementById('repo-url-input').addEventListener('input', function() {
+        const query = this.value.trim();
+        const btn = document.getElementById('repo-add-btn');
+        const errorMsg = document.getElementById('repo-error-msg');
+
+        // 入力が空なら即座にリセット
+        if (query.length === 0) {
+            resetUI();
+            return;
+        }
+
+        clearTimeout(timeout);
+        timeout = setTimeout(async () => {
+            try {
+                const response = await fetch(`/repositories/validate?repo_url=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.valid) {
+                    // 成功：ボタンを活性化
+                    btn.disabled = false;
+                    btn.classList.remove('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+                    btn.classList.add('bg-indigo-600', 'text-white', 'hover:bg-indigo-700', 'shadow-lg');
+                    errorMsg.classList.add('opacity-0');
+                } else {
+                    // 失敗：エラーメッセージを表示
+                    btn.disabled = true;
+                    errorMsg.innerText = "⚠️ " + data.message;
+                    errorMsg.classList.remove('opacity-0');
+                    btn.classList.add('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+                    btn.classList.remove('bg-indigo-600', 'text-white');
+                }
+            } catch (e) {
+                console.error("Validation error", e);
+            }
+        }, 500);
+    });
+
+    function resetUI() {
+        const btn = document.getElementById('repo-add-btn');
+        const errorMsg = document.getElementById('repo-error-msg');
+        btn.disabled = true;
+        btn.classList.add('bg-slate-100', 'text-slate-400', 'cursor-not-allowed');
+        btn.classList.remove('bg-indigo-600', 'text-white');
+        errorMsg.classList.add('opacity-0');
+    }
+        function validateInput() {
+            const input = document.getElementById('repo-url-input');
+            const btn = document.getElementById('repo-add-btn');
+
+            // 文字が入力されているか（空白を除いてチェック）
+            if (input.value.trim().length > 0) {
+                // 活性化
+                btn.disabled = false;
+                btn.classList.remove('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
+                btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'text-white', 'shadow-lg', 'shadow-indigo-200', 'active:scale-95');
+            } else {
+                // 非活性化
+                btn.disabled = true;
+                btn.classList.add('bg-slate-200', 'text-slate-400', 'cursor-not-allowed');
+                btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'text-white', 'shadow-lg', 'shadow-indigo-200', 'active:scale-95');
+            }
+        }
     function validateSave(event, repoId) {
             const textarea = document.getElementById(`convention-${repoId}`);
 

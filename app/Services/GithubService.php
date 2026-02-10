@@ -114,11 +114,11 @@ class GithubService
     public function summarizePullRequest(PullRequest $pr)
         {
         // diff_url から生の差分テキストを取得
-        $diffResponse = Http::get($pr->diff_url);
+        //0209追記:時間かけすぎたためBodyのみ要約
+        //$diffResponse = Http::get($pr->diff_url);
 
-        if ($diffResponse->failed()) return;
 
-        $diffText = $diffResponse->body();
+        $diffText = $pr->body;
 
         // AIサービスを呼び出し
         $aiService = app(GeminiService::class);
